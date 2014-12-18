@@ -35,7 +35,7 @@
 #ifdef USE_MJSON
 #include <json.h>
 #endif
-#include <cjson/json.h>
+#include <json.h>
 #include <nyx/nyx_client.h>
 /* todo:
  *

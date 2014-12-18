@@ -30,7 +30,7 @@
 
 #include <luna-service2/lunaservice.h>
 #include <lunaprefs.h>
-#include <cjson/json.h>
+#include <json.h>
 
 // #define DROP_DEPRECATED         /* Define to disable the older, deprecated method names */
 

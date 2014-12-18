@@ -26,7 +26,7 @@
 #ifdef USE_MJSON
 #include <json.h>
 #endif
-#include <cjson/json.h>
+#include <json.h>
 
 #ifdef __cplusplus
 extern "C" {

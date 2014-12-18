@@ -40,12 +40,9 @@ include_directories(../include/)
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 webos_add_compiler_flags(ALL ${GLIB2_CFLAGS})
 
-# -- check for cjson
-pkg_check_modules(CJSON REQUIRED cjson)
-webos_add_compiler_flags(ALL ${CJSON_CFLAGS})
-
-# commented to get correct json.h files
-#include_directories(${CJSON_INCLUDE_DIRS}/cjson)
+# -- check for json-c
+pkg_check_modules(JSON REQUIRED json-c)
+webos_add_compiler_flags(ALL ${JSON_CFLAGS})
 
 # -- check for LS2 (internally depends on pmloglib)
 pkg_check_modules(LS2 REQUIRED luna-service2)

@@ -42,25 +42,9 @@ include_directories(../include/)
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 webos_add_compiler_flags(ALL ${GLIB2_CFLAGS})
 
-# -- check for cjson
-pkg_check_modules(CJSON REQUIRED cjson)
-webos_add_compiler_flags(ALL ${CJSON_CFLAGS})
-
-# commented: see note below
-#include_directories(${CJSON_INCLUDE_DIRS}/cjson)
-
-# -- Note that both $MJSON_INCLUDE_DIRS and 
-# $CJSON_INCLUDE_DIRS point to the same path.
-# lunaprops.h has an explicit cjson/json.h check.
- 
-# /usr/local/include/json.h --> from mjson
-# /usr/local/include/cjson/json.h --> from cjson
-
-# Given this, the best solution is to _NOT_ include the cjson
-# include path. The confusion arises since mjson supplies
-# a json.h which is different from cjson/json.h, and CMAKE
-# is not able to figure out the proper json.h to be used,
-# always overriding mjson's json.h
+# -- check for json
+pkg_check_modules(JSON REQUIRED json-c)
+webos_add_compiler_flags(ALL ${JSON_CFLAGS})
 
 # -- check for sqlite 3.0
 pkg_check_modules(SQLITE3 REQUIRED sqlite3)
