@@ -66,7 +66,7 @@ webos_add_linker_options(ALL --no-undefined)
 add_library(luna-prefs SHARED lunaprefs.c)
 target_link_libraries(luna-prefs 
                       ${GLIB2_LDFLAGS} 
-                      ${CJSON_LDFLAGS}
+                      ${JSON_LDFLAGS}
                       ${SQLITE3_LDFLAGS}
                       ${NYXLIB_LDFLAGS}
                       )

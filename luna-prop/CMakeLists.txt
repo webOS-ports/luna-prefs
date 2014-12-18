@@ -51,7 +51,7 @@ webos_add_linker_options(ALL --no-undefined)
 add_executable(lunaprop main.c)
 target_link_libraries(lunaprop 
                       ${GLIB2_LDFLAGS} 
-                      ${CJSON_LDFLAGS}
+                      ${JSON_LDFLAGS}
                       luna-prefs
                       )
 
