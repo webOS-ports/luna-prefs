@@ -19,7 +19,7 @@
 TOP ?= ..
 include $(TOP)/config.mk
 
-LIBS=glib-2.0 lunaservice luna-prefs cjson
+LIBS=glib-2.0 lunaservice luna-prefs json
 
 OBJDIR=objs
 

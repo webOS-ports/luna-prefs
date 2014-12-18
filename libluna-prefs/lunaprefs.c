@@ -32,10 +32,7 @@
 #include <unistd.h>
 #include <sys/vfs.h>
 
-#ifdef USE_MJSON
 #include <json.h>
-#endif
-#include <cjson/json.h>
 #include <nyx/nyx_client.h>
 /* todo:
  *
@@ -354,32 +351,6 @@ getValue( void* context, int nColumns, char** colValues, char** colNames )
                       SQLITE_ABORT  */
 }
 
-#ifdef USE_MJSON
-static void
-cjson_to_mjson_put( json_t** jsont, struct json_object* json )
-{
-    const char* asStr = json_object_get_string( json );
-    *jsont = json_parse_document( asStr );
-    json_object_put( json );
-}
-#endif
-
-#ifdef USE_MJSON
-static void
-mjson_to_cjson( struct json_object** json, const json_t* jsont )
-{
-    char *text = NULL;
-    enum json_error err = json_tree_to_string( (json_t*)jsont, &text );
-    if ( JSON_OK == err )
-    {
-        *json = json_tokener_parse( text );
-        g_free( text );
-    } else {
-        g_assert(0);            /* what to do? */
-    }
-}
-#endif
-
 LPErr
 LPAppCopyValue( LPAppHandle handle, const char* key, char** jstr )
 {
@@ -454,20 +425,6 @@ LPAppCopyValueInt( LPAppHandle handle, const char* key, int* intValue )
     return err;
 }
 
-#ifdef USE_MJSON
-LPErr
-LPAppCopyValueJ( LPAppHandle handle, const char* key, json_t** jsont )
-{
-    LPErr err;
-    struct json_object* json;
-    err = LPAppCopyValueCJ( handle, key, &json );
-    if ( LP_ERR_NONE == err ) {
-        cjson_to_mjson_put( jsont, json );
-    }
-    return err;
-}
-#endif
-
 LPErr
 LPAppCopyValueCJ( LPAppHandle handle, const char* key, struct json_object** json )
 {
@@ -528,20 +485,6 @@ LPAppCopyKeys( LPAppHandle handle, char** jstr )
     return err;
 } /* LPAppCopyKeys */
 
-#ifdef USE_MJSON
-LPErr
-LPAppCopyKeysJ( LPAppHandle handle, json_t** jsont )
-{
-    LPErr err;
-    struct json_object* json;
-    err = LPAppCopyKeysCJ( handle, &json );
-    if ( LP_ERR_NONE == err ) {
-        cjson_to_mjson_put( jsont, json );
-    }
-    return err;
-}
-#endif
-
 LPErr
 LPAppCopyKeysCJ( LPAppHandle handle, struct json_object** json )
 {
@@ -601,20 +544,6 @@ LPAppCopyAll( LPAppHandle handle, char** jstr )
     json_object_put( jarray );
     return err;
 }
-
-#ifdef USE_MJSON
-LPErr
-LPAppCopyAllJ( LPAppHandle handle, json_t** jsont )
-{
-    LPErr err;
-    struct json_object* json;
-    err = LPAppCopyAllCJ( handle, &json );
-    if ( LP_ERR_NONE == err ) {
-        cjson_to_mjson_put( jsont, json );
-    }
-    return err;
-}
-#endif
 
 LPErr
 LPAppCopyAllCJ( LPAppHandle handle, struct json_object** json )
@@ -697,22 +626,6 @@ LPAppSetValueInt( LPAppHandle handle, const char* key, int intValue )
     return err;
 } /* LPAppSetValueInt */
 
-#ifdef USE_MJSON
-LPErr
-LPAppSetValueJ( LPAppHandle handle, const char* key, const json_t* jsont )
-{
-    g_return_val_if_fail( handle != NULL, -EINVAL );
-    g_return_val_if_fail( key != NULL, -EINVAL );
-    g_return_val_if_fail( jsont != NULL, -EINVAL );
-
-    struct json_object* json;
-    mjson_to_cjson( &json, jsont );
-    LPErr err = LPAppSetValueCJ( handle, key, json );
-    json_object_put( json );
-    return err;
-}
-#endif
-
 LPErr
 LPAppSetValueCJ( LPAppHandle handle, const char* key, struct json_object* json )
 {
@@ -731,7 +644,7 @@ LPAppSetValueCJ( LPAppHandle handle, const char* key, struct json_object* json )
         if ( !!jstr ) {
             err = setValueString( handle, key, jstr );
         } else {
-            g_critical( "json supplied to %s not acceptable to mjson", __func__ );
+            g_critical( "json supplied to %s not acceptable to json", __func__ );
             err = LP_ERR_VALUENOTJSON;
         }
     }
@@ -1245,20 +1158,6 @@ addToArrayIfUnique( const gchar* name, bool onPublicBus, void* closure )
     return err;
 } /* addToArrayIfUnique */
 
-#ifdef USE_MJSON
-LPErr
-LPSystemCopyKeysJ( json_t** jsont )
-{
-    LPErr err;
-    struct json_object* json;
-    err = LPSystemCopyKeysCJ( &json );
-    if ( LP_ERR_NONE == err ) {
-        cjson_to_mjson_put( jsont, json );
-    }
-    return err;
-}
-#endif
-
 static LPErr
 LPSystemCopyKeysCJ_impl( struct json_object** json, bool onPublicBus )
 {
@@ -1369,20 +1268,6 @@ addValToArray( const gchar* name, bool onPublicBus, void* closure )
     return err;
 }
 
-#ifdef USE_MJSON
-LPErr
-LPSystemCopyAllJ( json_t** jsont )
-{
-    LPErr err;
-    struct json_object* json;
-    err = LPSystemCopyAllCJ( &json );
-    if ( LP_ERR_NONE == err ) {
-        cjson_to_mjson_put( jsont, json );
-    }
-    return err;
-}
-#endif
-
 static LPErr
 LPSystemCopyAllCJ_impl( struct json_object** json, bool onPublicBus )
 {
@@ -1438,20 +1323,6 @@ LPSystemCopyValue( const char* key, char** jstr )
 
     return err;
 } /* LPSystemCopyValue */
-
-#ifdef USE_MJSON
-LPErr
-LPSystemCopyValueJ( const char* key, json_t** jsont )
-{
-    LPErr err;
-    struct json_object* json;
-    err = LPSystemCopyValueCJ( key, &json );
-    if ( LP_ERR_NONE == err ) {
-        cjson_to_mjson_put( jsont, json );
-    }
-    return err;
-}
-#endif
 
 LPErr
 LPSystemCopyValueCJ( const char* key, struct json_object** json )

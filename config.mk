@@ -20,6 +20,4 @@ LDFLAGS := -Wl,-rpath-link,$(BUILD)/lib -Wl,-rpath,$(BUILD)/lib $(LDFLAGS) \
 		$(shell pkg-config --cflags glib-2.0) \
 		-llunaservice \
 		-L$(LUNA_STAGING)/lib \
-		$(LDFLAGS) \
-#		-lmjson \
-
+		$(LDFLAGS)

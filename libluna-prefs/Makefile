@@ -20,7 +20,7 @@ TOP ?= ..
 include $(TOP)/config.mk
 
 LIBS=sqlite3 glib-2.0
-# PmIpcLib  mjson
+# PmIpcLib
 
 OBJDIR=objs
 
