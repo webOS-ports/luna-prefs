@@ -166,7 +166,7 @@ parseMessage( LSMessage* message, const char* firstKey, ... )
     const char* str = LSMessageGetPayload( message );
     if ( NULL != str ) {
         struct json_object* doc = json_tokener_parse( str );
-        if ( !is_error(doc) ) {
+        if ( doc ) {
             va_list ap;
             va_start( ap, firstKey );
 
@@ -222,7 +222,7 @@ replyWithKeyValue( LSHandle* sh, LSMessage* message, LSError* lserror,
     struct json_object* jsonVal = json_tokener_parse( value );
 
     /* If it doesn't parse, it's probably just a string.  Turn it into a json string */
-    if ( is_error(jsonVal) )
+    if ( !jsonVal )
     {
         jsonVal = json_object_new_string( value );
     }
@@ -671,7 +671,7 @@ sysGetSome_impl( LSHandle* sh, LSMessage* message, void* user_data,
     const char* str = LSMessageGetPayload( message );
     if ( NULL != str ) {
         struct json_object* doc = json_tokener_parse( str );
-        if ( !is_error(doc) && json_object_is_type( doc, json_type_array ) ) {
+        if ( doc && json_object_is_type( doc, json_type_array ) ) {
             int len = json_object_array_length( doc );
             int ii;
 
@@ -1545,7 +1545,7 @@ appSetValue( LSHandle* sh, LSMessage* message, void* user_data )
     LPErr err;
 
     struct json_object* payload = json_tokener_parse( LSMessageGetPayload( message ) );
-    if ( !is_error(payload) ) {
+    if ( payload ) {
         struct json_object* appId = json_object_object_get( payload, "appId" );
         struct json_object* key = json_object_object_get( payload, "key");
         struct json_object* value = json_object_object_get( payload, "value");
