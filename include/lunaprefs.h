@@ -1,21 +1,18 @@
-/* @@@LICENSE
-*
-*      Copyright (c) 2008-2013 LG Electronics, Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-* LICENSE@@@ */
-
+// Copyright (c) 2008-2018 LG Electronics, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
 
 /* -*-mode: C; fill-column: 78; c-basic-offset: 4; -*- */
 
@@ -23,7 +20,10 @@
 #define _LUNAPREFS_H_
 
 #include <stdbool.h>
+#ifdef USE_MJSON
 #include <json.h>
+#endif
+#include <cjson/json.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +47,7 @@ typedef void* LPAppHandle;
 #define LP_ERR_NOTIMPL        10 /* feature not implemented */
 #define LP_ERR_INTERNAL       11 /* some component I called reported failure */
 #define LP_ERR_DBERROR        12
+#define LP_ERR_PERM           13 /* Permission Denied*/
 
     /**
      * Add a file FOO with contents "BAR" to this directory and you now have a
@@ -82,45 +83,57 @@ LPErr LPAppFreeHandle( LPAppHandle handle, bool commit );
 
 
 LPErr LPAppCopyValue( LPAppHandle handle, const char* key, char** jstr );
-    /** LPAppCopyValueString 
+    /** LPAppCopyValueString
      *
      * @brief convenience function.  Looks up value in DB, assumes it's an
      * array of one string, and returns that string.
      */
 LPErr LPAppCopyValueString( LPAppHandle handle, const char* key, char** str );
 LPErr LPAppCopyValueInt( LPAppHandle handle, const char* key, int* intValue );
+#ifdef USE_MJSON
+LPErr LPAppCopyValueJ( LPAppHandle handle, const char* key, json_t** json );
+#endif
 LPErr LPAppCopyValueCJ( LPAppHandle handle, const char* key, struct json_object** json );
 
 LPErr LPAppSetValue( LPAppHandle handle, const char* key, const char* const jstr );
-    /** LPAppSetValueString 
+    /** LPAppSetValueString
      *
      * @brief convenience function.  Takes string, wraps it as an array of one
      * string to make it a legal json, and stores it.
      */
 LPErr LPAppSetValueString( LPAppHandle handle, const char* key, const char* const str );
 LPErr LPAppSetValueInt( LPAppHandle handle, const char* key, int intValue );
+#ifdef USE_MJSON
+LPErr LPAppSetValueJ( LPAppHandle handle, const char* key, const json_t* json );
+#endif
 LPErr LPAppSetValueCJ( LPAppHandle handle, const char* key, struct json_object* json );
 
 LPErr LPAppRemoveValue( LPAppHandle handle, const char* key );
 
 /**
  * LPAppCopyKeys
- * 
+ *
  * Return in *json ptr to json consisting of a json array of strings
  * representing all the keys in the null-terminated string g_malloc'd
  * internally.  Caller must call g_free when done.
  */
 LPErr LPAppCopyKeys( LPAppHandle handle, char** jstr );
+#ifdef USE_MJSON
+LPErr LPAppCopyKeysJ( LPAppHandle handle, json_t** json );
+#endif
 LPErr LPAppCopyKeysCJ( LPAppHandle handle, struct json_object** json );
 
 /**
  * LPAppCopyAll
- * 
+ *
  * Return in *json ptr to json-formatted string consisting of a json array of
  * key/value pairs representing all the keys and values.  The null-terminated
  * string returned is g_malloc'd internally.  Caller must call g_free when done.
  */
 LPErr LPAppCopyAll( LPAppHandle handle, char** jstr );
+#ifdef USE_MJSON
+LPErr LPAppCopyAllJ( LPAppHandle handle, json_t** json );
+#endif
 LPErr LPAppCopyAllCJ( LPAppHandle handle, struct json_object** json );
 
 
@@ -133,7 +146,7 @@ LPErr LPAppCopyAllCJ( LPAppHandle handle, struct json_object** json );
 
 /**
  * LPSystemCopyStringValue
- * 
+ *
  * Return in *value ptr to value only as null-terminated string
  * g_malloc'd internally.  Caller must call g_free when done.
  *
@@ -144,23 +157,29 @@ LPErr LPSystemCopyStringValue( const char* key, char** jstr );
 
 /**
  * LPSystemCopyValue
- * 
+ *
  * Return in *json ptr to json consisting of { key : value } as
  * null-terminated string g_malloc'd internally.  Caller must call
  * g_free when done.
  */
 LPErr LPSystemCopyValue( const char* key, char** jstr );
+#ifdef USE_MJSON
+LPErr LPSystemCopyValueJ( const char* key, json_t** json );
+#endif
 LPErr LPSystemCopyValueCJ( const char* key, struct json_object** json );
 
 /**
  * LPSystemCopyKeys
- * 
+ *
  * Return in *json ptr to json consisting of a json array of strings
  * representing all the keys in the null-terminated string g_malloc'd
  * internally.  Caller must call g_free when done.
  */
 
 LPErr LPSystemCopyKeys( char** jstr );
+#ifdef USE_MJSON
+LPErr LPSystemCopyKeysJ( json_t** json );
+#endif
 LPErr LPSystemCopyKeysCJ( struct json_object** json );
 
 LPErr LPSystemCopyKeysPublic( char** jstr ); /* for use by the service only */
@@ -168,12 +187,15 @@ LPErr LPSystemCopyKeysPublicCJ( struct json_object** json ); /* for use by the s
 
 /**
  * LPSystemCopyAll
- * 
+ *
  * Return in *json ptr to json-formatted string consisting of a json array of
  * key/value pairs representing all the keys and values.  The null-terminated
  * string returned is g_malloc'd internally.  Caller must call g_free when done.
  */
 LPErr LPSystemCopyAll( char** jstr );
+#ifdef USE_MJSON
+LPErr LPSystemCopyAllJ( json_t** json );
+#endif
 LPErr LPSystemCopyAllCJ( struct json_object** json );
 
 LPErr LPSystemCopyAllPublic( char** jstr ); /* for use by the service only */
@@ -183,7 +205,7 @@ LPErr LPSystemKeyIsPublic( const char* key, bool* allowedOnPublicBus ); /* for u
 
 /**
  * LPErrorString
- * 
+ *
  * Return in *str ptr to user-readable string explanaing the error.  Caller must
  * call g_free when done.
  */

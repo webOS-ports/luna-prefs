@@ -1,6 +1,4 @@
-# @@@LICENSE
-#
-#      Copyright (c) 2008-2013 LG Electronics, Inc.
+# Copyright (c) 2008-2018 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# LICENSE@@@
+# SPDX-License-Identifier: Apache-2.0
 
 TOP ?= ..
 include $(TOP)/config.mk
 
 LIBS=sqlite3 glib-2.0
-# PmIpcLib
+# PmIpcLib  mjson
 
 OBJDIR=objs
 

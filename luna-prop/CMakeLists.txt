@@ -1,6 +1,4 @@
-# @@@LICENSE
-#
-# Copyright (c) 2012-2013 LG Electronics, Inc.
+# Copyright (c) 2012-2018 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,24 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# LICENSE@@@
-
-cmake_minimum_required(VERSION 2.8.7)
+# SPDX-License-Identifier: Apache-2.0
 
 project(lunaprop C)
-
-include(webOS/webOS)
-
-# -- the following two lines are commented
-# -- as the global info comes from the top
-# -- level cmake script. However, its useful
-# -- to still use these for unit testing to
-# -- check that this sub-component compiles.
-
-#webos_modules_init(1 0 0 QUALIFIER RC2)
-#webos_component(2 0 0)
-
-include(FindPkgConfig)
 
 # -- add local include paths
 include_directories(../include/)
@@ -40,18 +23,18 @@ include_directories(../include/)
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)
 webos_add_compiler_flags(ALL ${GLIB2_CFLAGS})
 
-# -- check for json-c
-pkg_check_modules(JSON REQUIRED json-c)
-webos_add_compiler_flags(ALL ${JSON_CFLAGS})
+# -- check for cjson
+pkg_check_modules(CJSON REQUIRED cjson)
+webos_add_compiler_flags(ALL ${CJSON_CFLAGS})
 
 # -- no way to disable warn_unused_result right now.
 webos_add_compiler_flags(ALL -g -O3 -Wall -Wno-unused-but-set-variable -Wno-unused-variable -fno-exceptions)
 webos_add_linker_options(ALL --no-undefined)
 
 add_executable(lunaprop main.c)
-target_link_libraries(lunaprop 
-                      ${GLIB2_LDFLAGS} 
-                      ${JSON_LDFLAGS}
+target_link_libraries(lunaprop
+                      ${GLIB2_LDFLAGS}
+                      ${CJSON_LDFLAGS}
                       luna-prefs
                       )
 

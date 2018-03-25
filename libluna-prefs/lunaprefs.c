@@ -1,38 +1,32 @@
-/* @@@LICENSE
-*
-*      Copyright (c) 2008-2013 LG Electronics, Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-* LICENSE@@@ */
-
-
+// Copyright (c) 2008-2018 LG Electronics, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
 /* -*-mode: C; fill-column: 78; c-basic-offset: 4; -*- */
 
+#include "lunaprefs.h"
+
 #include <glib.h>
-#include <lunaprefs.h>
 #include <sqlite3.h>
 #include <errno.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/vfs.h>
 
-#include <json.h>
+#include <cjson/json.h>
 #include <nyx/nyx_client.h>
 /* todo:
  *
@@ -69,15 +63,6 @@
  * now.
  */
 
-#define LUNAPREFS_DEBUG
-#ifdef LUNAPREFS_DEBUG
-# define LOG_IN()   fprintf( stderr, "entering %s()\n", __func__ )
-# define LOG_OUT(res)   fprintf( stderr, "%s()=>%d\n", __func__, (res) )
-#else
-# define LOG_IN()
-# define LOG_OUT(res)
-#endif
-
 #define PROPS_DIR "/etc/prefs/properties"
 #define WHITELIST_PATH "/etc/prefs/public_properties"
 #define TOKENS_DIR "/dev/tokens"
@@ -99,8 +84,6 @@
 #define PROP_NAME_FREESPACE       "storageFreeSpace"
 #define PROP_NAME_PREVPANIC       "prevBootPanicked"
 #define PROP_NAME_PREVSHUTCLEAN   "prevShutdownClean"
-#define PROP_NAME_WIFIOADDR       "WIFIoADDR"
-#define PROP_NAME_BTOADDR         "BToADDR"
 
 static const char* PALM_TOKEN_PREFIX = "com.palm.properties.";
 
@@ -129,7 +112,7 @@ static bool
 check_is_json( const char* text )
 {
     struct json_object* jobj = json_tokener_parse( text );
-    bool isJson =  jobj ;
+    bool isJson = !is_error( jobj );
     if ( isJson ) {
         isJson = is_toplevel_json( jobj );
         json_object_put( jobj );
@@ -143,13 +126,13 @@ keyValueAsObject( const char* key, const char* value )
 {
     struct json_object* jobject = json_object_new_object();
     struct json_object* jvalue = json_tokener_parse( value );
-    if ( ! jvalue  ) {
+    if ( is_error( jvalue ) ) {
         jvalue = json_object_new_string( value );
     } else if ( !is_toplevel_json(jvalue) ) {   /* not a legal document string */
         json_object_put( jvalue );
         jvalue = json_object_new_string( value );
     }
-    g_assert( jvalue );
+    g_assert( !is_error(jvalue) );
     json_object_object_add(jobject, key, jvalue);
 
     return jobject;
@@ -185,7 +168,7 @@ strToJsonWithCheck( const char* jstr, struct json_object** json )
 {
     LPErr err = LP_ERR_NONE;
     struct json_object* tmp = json_tokener_parse( jstr );
-    if (  tmp  && is_toplevel_json( tmp ) )
+    if ( !is_error( tmp ) && is_toplevel_json( tmp ) )
     {
         *json = tmp;
     }
@@ -459,9 +442,9 @@ addValueToArray( void* context, int nColumns, char** colValues, char** colNames 
 {
     g_assert( nColumns == 1 );
     struct json_object* jarray = (struct json_object*)context;
-	struct json_object* jstr = json_object_new_string( colValues[0] );
+    struct json_object* jstr = json_object_new_string( colValues[0] );
 
-	json_object_array_add( jarray, jstr );
+    json_object_array_add( jarray, jstr );
 
     return 0;
 } /* addValueToArray */
@@ -473,7 +456,7 @@ LPAppCopyKeys( LPAppHandle handle, char** jstr )
     g_return_val_if_fail( handle != NULL, -EINVAL );
     g_return_val_if_fail( jstr != NULL, -EINVAL );
 
-	struct json_object* jarray = json_object_new_array();
+    struct json_object* jarray = json_object_new_array();
 
     err = runSQL( handle, true, addValueToArray, jarray, "SELECT key FROM data;" );
 
@@ -492,7 +475,7 @@ LPAppCopyKeysCJ( LPAppHandle handle, struct json_object** json )
     g_return_val_if_fail( handle != NULL, -EINVAL );
     g_return_val_if_fail( json != NULL, -EINVAL );
 
-	struct json_object* jarray = json_object_new_array();
+    struct json_object* jarray = json_object_new_array();
 
     err = runSQL( handle, true, addValueToArray, jarray, "SELECT key FROM data;" );
 
@@ -516,11 +499,12 @@ addKeyValueToArray( void* context, int nColumns, char** colValues, char** colNam
     struct json_object* obj = json_object_new_object();
     if ( NULL != obj ) {
         struct json_object* value = json_tokener_parse( colValues[1] );
-        if ( value && is_toplevel_json(value) ) {
+        if ( !is_error(value) && is_toplevel_json(value) ) {
             json_object_object_add( obj, colValues[0], value );
             json_object_array_add( jarray, obj );
-            err = 0;
+            return 0;
         }
+        json_object_put( obj );
     }
 
     return err;
@@ -533,7 +517,7 @@ LPAppCopyAll( LPAppHandle handle, char** jstr )
     g_return_val_if_fail( handle != NULL, -EINVAL );
     g_return_val_if_fail( jstr != NULL, -EINVAL );
 
-	struct json_object* jarray = json_object_new_array();
+    struct json_object* jarray = json_object_new_array();
 
     err = runSQL( handle, true, addKeyValueToArray, jarray, "SELECT key,value FROM data;" );
 
@@ -644,7 +628,7 @@ LPAppSetValueCJ( LPAppHandle handle, const char* key, struct json_object* json )
         if ( !!jstr ) {
             err = setValueString( handle, key, jstr );
         } else {
-            g_critical( "json supplied to %s not acceptable to json", __func__ );
+            g_critical( "json supplied to %s not acceptable to mjson", __func__ );
             err = LP_ERR_VALUENOTJSON;
         }
     }
@@ -680,41 +664,6 @@ LPAppRemoveValue( LPAppHandle handle, const char* key )
    file in /dev/tokens.  Other prefixes are treated as special cases.
  */
 
-static LPErr
-get_from_cmdline( char** jstr, const char* key )
-{
-    LPErr err = LP_ERR_SYSCONFIG;
-
-    FILE* cmdline = fopen( "/proc/cmdline", "r" );
-    if ( NULL != cmdline ) {
-        char buf[4096];
-
-        if ( buf == fgets( buf, sizeof(buf), cmdline ) )
-        {
-            char* token;
-            char* str = buf;
-            char* saveptr;
-            int keylen = strlen( key );
-            while ( NULL != (token = strtok_r( str, " ", &saveptr )) )
-            {
-                if ( 0 == strncmp( key, token, keylen )
-                     && token[keylen] == '=' )
-                {
-                    *jstr = g_strdup( token + keylen + 1 ); /* skip '=' */
-                    err = LP_ERR_NONE;
-                    break;
-                }
-
-                str = NULL;         /* for subsequent strtok_r calls */
-            }
-        }
-
-        fclose( cmdline );
-    }
-
-    return err;
-}
-
 static LPErr read_machine_type(char** jstr,const char* key)
 {
     nyx_error_t error = NYX_ERROR_GENERIC;
@@ -737,15 +686,6 @@ static LPErr read_machine_type(char** jstr,const char* key)
             {
                 error = nyx_device_info_query(device, NYX_DEVICE_INFO_BOARD_TYPE, &dev_name);
             }
-            else if (0 == strncmp(key, "WIFIoADDR", strlen(key)))
-            {
-                error = nyx_device_info_query(device, NYX_DEVICE_INFO_WIFI_ADDR, &dev_name);
-            }
-            else if (0 == strncmp(key, "BToADDR", strlen(key)))
-            {
-                error = nyx_device_info_query(device, NYX_DEVICE_INFO_BT_ADDR, &dev_name);
-            }
-
             if (NYX_ERROR_NONE == error)
             {
                 *jstr = g_strdup(dev_name);
@@ -772,7 +712,7 @@ static LPErr read_OS_Info(char **jstr,const char* key)
         {
             if ( 0 == strncmp( key, "version",strlen(key) ))
             {
-                error = nyx_os_info_query(device, NYX_OS_INFO_WEBOS_API_VERSION, &dev_name);
+                error = nyx_os_info_query(device, NYX_OS_INFO_CORE_OS_KERNEL_VERSION, &dev_name);
             }
             else if(0 == strncmp(key,"buildNumber",strlen(key)))
             {
@@ -797,46 +737,6 @@ static LPErr read_OS_Info(char **jstr,const char* key)
    }
    return err;
 }
-static LPErr
-get_from_buildInfo( const char* fileKey, char** jstr )
-{
-    LPErr err = LP_ERR_NO_SUCH_KEY;
-
-    FILE* file = fopen( BUILD_INFO_PATH, "r" );
-
-    if ( NULL != file ) {
-        for ( ; ; ) {
-            char buf[128];
-            char* value;
-
-            if ( !fgets( buf, sizeof(buf)/sizeof(buf[0]), file ) ) {
-                break;
-            }
-
-            value = strstr( buf, "=" );
-            if ( !!value )
-            {
-                *value = '\0';
-                ++value;        /* skip null */
-
-                if ( 0 == strcmp( fileKey, buf ) ) {
-                    int len = strlen( value );
-                    while ( '\n' == value[len-1] && len > 0 ) {
-                        --len;
-                    }
-                    value[len] = '\0';
-                    *jstr = g_strdup( value );
-
-                    err = LP_ERR_NONE;
-                    break;
-                }
-            }
-        }
-        fclose( file );
-    }
-
-    return err;
-} /* readBuildInfo */
 
 static LPErr
 figureDiskCapacity( char** jstr )
@@ -960,8 +860,6 @@ static const char* g_non_tokens[] = {
     ,PROP_NAME_FREESPACE
     ,PROP_NAME_PREVPANIC
     ,PROP_NAME_PREVSHUTCLEAN
-    ,PROP_NAME_WIFIOADDR
-    ,PROP_NAME_BTOADDR
 };
 
 static char*
@@ -990,7 +888,7 @@ readFromFile( const char* path, char** jstrp )
         gchar buf[siz + 1];
         memcpy( buf, g_mapped_file_get_contents(mf), siz );
         //g_mapped_file_free( mf );
-	g_mapped_file_unref( mf );
+    g_mapped_file_unref( mf );
 
         buf[siz] = '\0';
         jstr = g_strdup( buf );
@@ -1042,10 +940,6 @@ LPSystemCopyStringValue( const char* key, char** jstr )
             err = figurePrevPanic( jstr );
         } else if ( ! strcmp( token, PROP_NAME_PREVSHUTCLEAN ) ) {
             err = figureShutdownClean( jstr );
-        } else if ( ! strcmp( token, PROP_NAME_WIFIOADDR ) ) {
-            err = read_machine_type(jstr, "WIFIoADDR");
-        } else if ( ! strcmp( token, PROP_NAME_BTOADDR ) ) {
-            err = read_machine_type(jstr, "BToADDR");
         } else if ( NULL != (path = getTokenPath( token, TOKENS_DIR )) ) {
             err = readFromFile( path, jstr );
         } else if ( NULL != (path = getTokenPath( token, LP_RUNTIME_DIR )) ) {
@@ -1109,20 +1003,20 @@ for_each_dir_token( const char* dirpath,
 {
     LPErr err = LP_ERR_NONE;
     GDir *dir = g_dir_open( dirpath, 0, NULL );
-    while ( !!dir )
+    if ( dir )
     {
         const gchar* name = g_dir_read_name( dir );
-        if ( !name ) {
-            break;
+        for ( ; name; name = g_dir_read_name( dir ))
+        {
+            err = (*proc)( name, onPublicBus, closure );
+            if ( LP_ERR_NONE != err ) {
+                break;
+            }
         }
-        err = (*proc)( name, onPublicBus, closure );
-        if ( LP_ERR_NONE != err ) {
-            break;
-        }
-    }
-    if ( NULL != dir ) { /* glib docs say NULL is ok, but code asserts !NULL */
+
         g_dir_close( dir );
     }
+
     return err;
 }
 
@@ -1149,7 +1043,7 @@ addToArrayIfUnique( const gchar* name, bool onPublicBus, void* closure )
             struct json_object* jstr = json_object_new_string( val );
             if ( 0 != json_object_array_add( jarray, jstr ) )
             {
-                /* Am I leaking jstr in this case?  We're probably hosed anyway. */
+                json_object_put( jstr );
                 err = -EINVAL;
             }
         }
@@ -1165,7 +1059,7 @@ LPSystemCopyKeysCJ_impl( struct json_object** json, bool onPublicBus )
 
     LPErr err = LP_ERR_NONE;
 
-	struct json_object* jarray = json_object_new_array();
+    struct json_object* jarray = json_object_new_array();
     if ( NULL == jarray ) {
         err = LP_ERR_MEM;
         goto err;
@@ -1247,19 +1141,21 @@ LPSystemCopyAllPublicCJ( struct json_object** json )
 static LPErr
 addValToArray( const gchar* name, bool onPublicBus, void* closure )
 {
+    g_assert( closure );
+
     struct json_object* array = (struct json_object*)closure;
     char* value = NULL;
     LPErr err = LP_ERR_NONE;
 
     gchar* key = g_strdup_printf( "%s%s", PALM_TOKEN_PREFIX, name );
     if ( !onPublicBus || systemKeyIsPublic( key ) ) {
-
         if ( !keyFoundInArray( array, key ) ) {
             err = LPSystemCopyStringValue( key, &value );
             if ( LP_ERR_NONE == err )
             {
                 struct json_object* pair = keyValueAsObject( key, value );
-                addPairToArray( &array, pair );
+                int res = json_object_array_add( array, pair );
+                g_assert( res == 0 );
             }
         }
     }
@@ -1340,52 +1236,46 @@ LPSystemCopyValueCJ( const char* key, struct json_object** json )
     return err;
 }
 
+static GHashTable* public_keys_cache = NULL;
+pthread_once_t public_keys_cache_control = PTHREAD_ONCE_INIT;
+
+static void clear_on_exit()
+{
+    g_hash_table_destroy( public_keys_cache );
+}
+
+static void init_public_keys_cache()
+{
+    public_keys_cache = g_hash_table_new_full( g_str_hash, g_str_equal, g_free, NULL );
+    g_assert( !public_keys_cache );
+
+    FILE* fp = fopen( WHITELIST_PATH, "r" );
+    if (fp)
+    {
+        char buf[128];
+        for ( ; !fgets( buf, sizeof(buf), fp ); )
+        {
+            size_t len = strlen( buf ) - 1;
+            g_assert(buf[len] == '\n'); /* let's catch too-long key names early */
+            buf[len] = '\0';
+
+            /* no dupes, please */
+            g_assert( !g_hash_table_lookup_extended( public_keys_cache, buf, NULL, NULL ) );
+            g_hash_table_insert( public_keys_cache, g_strdup(buf), NULL );
+        }
+
+        fclose( fp );
+        atexit( clear_on_exit );
+    }
+}
+
 LPErr
 LPSystemKeyIsPublic( const char* key, bool* allowedOnPublicBus )
 {
-    LPErr err = LP_ERR_NONE;
-    gboolean found = false;
-    static GHashTable* sHash = NULL;
+    pthread_once( &public_keys_cache_control, init_public_keys_cache );
 
-    if ( !sHash ) {
-        /* Keep a hashtable for faster lookup.  Don't worry about deleting:
-           just let the OS reclaim process memory on exit.  As to the data
-           changing, no worries there either: this file is owned by our
-           package and so we'll always be restarted after an update.
-
-           Note that this function will only get called in response to
-           activity on the public bus.  When the C API is used by clients
-           other than the service, e.g. by lunaprop, this hash table will
-           never get created.  It's only the long-running service that will
-           need it.  So it's not a waste.
-        */
-        sHash = g_hash_table_new( g_str_hash, g_str_equal );
-        g_assert( NULL != sHash );
-
-        if ( NULL != sHash ) {
-            FILE* fp = fopen( WHITELIST_PATH, "r" );
-            if ( NULL != fp ) {
-                char buf[128];
-                while ( NULL != fgets( buf, sizeof(buf), fp ) ) {
-                    size_t len = strlen(buf) - 1;
-                    g_assert( buf[len] == '\n' ); /* let's catch too-long key names early */
-                    buf[len] = '\0';
-
-                    /* no dupes, please */
-                    g_assert( !g_hash_table_lookup_extended( sHash, buf, NULL, NULL ) );
-                    g_hash_table_insert( sHash, g_strdup(buf), NULL );
-                }
-                fclose( fp );
-            }
-        }
-    }
-
-    if ( NULL != sHash ) {
-        found = g_hash_table_lookup_extended( sHash, key, NULL, NULL );
-    }
-
-    *allowedOnPublicBus = found;
-    return err;
+    *allowedOnPublicBus = g_hash_table_lookup_extended( public_keys_cache, key, NULL, NULL);
+    return LP_ERR_NONE;
 }
 
 static bool
@@ -1395,7 +1285,6 @@ systemKeyIsPublic( const char* key )
     LPErr err = LPSystemKeyIsPublic( key, &onWhitelist );
     return LP_ERR_NONE == err && onWhitelist;
 }
-
 
 LPErr
 LPErrorString( LPErr err, char** str )
@@ -1443,6 +1332,9 @@ LPErrorString( LPErr err, char** str )
         break;
     case LP_ERR_DBERROR:
         msg = "unspecified sqlite3 error";
+        break;
+    case LP_ERR_PERM:
+        msg = "Permission Error";
         break;
     }
 

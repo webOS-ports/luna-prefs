@@ -1,11 +1,14 @@
-Summary
-=======
-Retrieves system preferences values set and used by webOS
-
 luna-prefs
 ==========
 
-This component supports the following methods, which are described in detail in the generated documentation:  
+Summary
+-------
+Retrieves system preferences values set and used by webOS
+
+Description
+-----------
+
+This component supports the following methods, which are described in detail in the generated documentation:
 
 *  com.palm.preferences/appProperties/getAllAppProperties
 *  com.palm.preferences/appProperties/getAllAppPropertiesObj
@@ -26,7 +29,7 @@ This component supports the following methods, which are described in detail in 
 How to Build on Linux
 =====================
 
-## Building using OpenEmbedded 
+## Building using OpenEmbedded
 
 Using the meta-webos layer for OpenEmbedded is the preferred method of building Open webOS components.
 This allows your package to be installed into an Open webOS system, or as part of an Open webOS image.
@@ -95,7 +98,7 @@ Cautions:
 
 ## Building Standalone (without webOS)
 
-This component of webOS can be built as a standalone piece that does not depend upon the rest of the system. 
+This component of webOS can be built as a standalone piece that does not depend upon the rest of the system.
 
 ### Dependencies
 
@@ -104,7 +107,7 @@ Below are the tools and libraries (and their minimum versions) required to build
 * openwebos/cmake-modules-webos 1.0.0 RC2
 * cmake (version required by openwebos/cmake-modules-webos)
 * openwebos/luna-service2 3.0.0
-* json-c 0.11
+* openwebos/cjson 1.8.0
 * sqlite3 3.7.4-2
 * glib-2.0 2.28.6
 
@@ -121,7 +124,7 @@ Once you have downloaded the source, execute the following to build it (after ch
     $ sudo make install
 
 The directory under which the files are installed defaults to <tt>/usr/local/webos</tt>.
-You can install them elsewhere by supplying a value for <tt>WEBOS_INSTALL_ROOT</tt> when invoking <tt>cmake</tt>. 
+You can install them elsewhere by supplying a value for <tt>WEBOS_INSTALL_ROOT</tt> when invoking <tt>cmake</tt>.
 
 For example:
 
@@ -137,7 +140,7 @@ You can specify additional directories to be searched prior to this one by setti
 To see all of the make targets that CMake has generated, issue:
 
     $ make help
-    
+
 #### Uninstalling
 
 From the directory where you originally ran `make install`, enter:
@@ -148,9 +151,9 @@ You will need to use `sudo` if you did not specify `WEBOS_INSTALL_ROOT`.
 
 # Copyright and License Information
 
-All content, including all source code files and documentation files in this repository except otherwise noted are: 
+All content, including all source code files and documentation files in this repository except otherwise noted are:
 
- Copyright (c) 2008-2013 LG Electronics, Inc.
+ Copyright (c) 2008-2018 LG Electronics, Inc.
 
 All content, including all source code files and documentation files in this repository except otherwise noted are:
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -165,3 +168,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+SPDX-License-Identifier: Apache-2.0
