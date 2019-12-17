@@ -1,6 +1,4 @@
-# @@@LICENSE
-#
-# Copyright (c) 2012-2013 LG Electronics, Inc.
+# Copyright (c) 2012-2018 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,34 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# LICENSE@@@
-
-cmake_minimum_required(VERSION 2.8.7)
+# SPDX-License-Identifier: Apache-2.0
 
 project(luna-prefs-service C)
-
-include(webOS/webOS)
-
-# -- the following two lines are commented
-# -- as the global info comes from the top
-# -- level cmake script. However, its useful
-# -- to still use these for unit testing to
-# -- check that this sub-component compiles.
-
-#webos_modules_init(1 0 0 QUALIFIER RC2)
-#webos_component(2 0 0)
-
-include(FindPkgConfig)
 
 # -- add local include paths
 include_directories(../include/)
 
 # -- check for glib 2.0
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+include_directories(${GLIB2_CFLAGS})
 webos_add_compiler_flags(ALL ${GLIB2_CFLAGS})
 
 # -- check for json-c
 pkg_check_modules(JSON REQUIRED json-c)
+include_directories(${JSON_CFLAGS})
 webos_add_compiler_flags(ALL ${JSON_CFLAGS})
 
 # -- check for LS2 (internally depends on pmloglib)
@@ -53,9 +38,9 @@ webos_add_compiler_flags(ALL ${LS2_CFLAGS})
 webos_add_compiler_flags(ALL -g -O3 -Wall -Wno-unused-but-set-variable -Wno-unused-variable -fno-exceptions)
 webos_add_linker_options(ALL --no-undefined)
 
-add_executable(luna-prefs-service main.c)
+add_executable(luna-prefs-service main.c database.c accesschecker.c)
 target_link_libraries(luna-prefs-service
-                      ${GLIB2_LDFLAGS} 
+                      ${GLIB2_LDFLAGS}
                       ${JSON_LDFLAGS}
                       ${LS2_LDFLAGS}
                       luna-prefs
