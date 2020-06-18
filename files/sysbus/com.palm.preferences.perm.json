@@ -1,0 +1,7 @@
+{
+    "com.palm.preferences": [
+        "settings",
+        "system",
+        "database.internal"
+    ]
+}
